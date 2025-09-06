@@ -47,7 +47,7 @@ jobs:
 
   build-docker-image:
     needs: get-latest-tag
-    if: needs.get-latest-tag.outputs.addtag == 'true'
+    if: needs.get-latest-tag.outputs.addtag == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
