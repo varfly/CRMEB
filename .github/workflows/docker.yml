@@ -99,10 +99,34 @@ jobs:
           username: varfly
           password: ${{ secrets.GH_PAT }}
           
-      - name: update Dckerfile
+      - name: Fix Dockerfile for PHP 7.4 packages
         run: |
-          echo "ADD ./crmeb /var/www" >> ./CRMEB/docker-compose/php/Dockerfile
-          echo "ADD ./docker-compose/php/php-ini-overrides.ini /etc/php/7.4/fpm/conf.d/99-overrides.ini" >> ./CRMEB/docker-compose/php/Dockerfile
+          # 备份原始 Dockerfile
+          cp ./CRMEB/docker-compose/php/Dockerfile ./CRMEB/docker-compose/php/Dockerfile.backup
+          
+          # 创建修复后的 Dockerfile
+          cat > ./CRMEB/docker-compose/php/Dockerfile << 'EOF'
+          FROM phpdockerio/php:7.4-fpm AS crmeb_php
+          WORKDIR "/var/www"
+
+          # 扩展依赖 - 修复包名
+          RUN apt-get update && \
+              apt-get -y --no-install-recommends install \
+                  php-bcmath \
+                  php-redis \
+                  php-mysqli \
+                  php-gd && \
+              apt-get clean && \
+              apt-get autoremove && \
+              rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+
+          # PHP 配置
+          RUN echo "open_basedir = /tmp:/var" > /etc/php/7.4/fpm/conf.d/open_basedir.ini
+
+          # 添加我们的文件
+          ADD ./crmeb /var/www
+          ADD ./docker-compose/php/php-ini-overrides.ini /etc/php/7.4/fpm/conf.d/99-overrides.ini
+          EOF
 
       #- name: Get tag
       #  id: tag
