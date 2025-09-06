@@ -106,26 +106,77 @@ jobs:
           
           # 创建修复后的 Dockerfile
           cat > ./CRMEB/docker-compose/php/Dockerfile << 'EOF'
-          FROM phpdockerio/php:7.4-fpm AS crmeb_php
+          FROM php:7.4-fpm AS crmeb_php
           WORKDIR "/var/www"
 
-          # 扩展依赖 - 修复包名
-          RUN apt-get update && \
-              apt-get -y --no-install-recommends install \
-                  php-bcmath \
-                  php-redis \
-                  php-mysqli \
-                  php-gd && \
-              apt-get clean && \
-              apt-get autoremove && \
-              rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+          # 安装系统依赖
+          RUN apt-get update && apt-get install -y \
+              libfreetype6-dev \
+              libjpeg62-turbo-dev \
+              libpng-dev \
+              libzip-dev \
+              libicu-dev \
+              libxml2-dev \
+              libxslt-dev \
+              libcurl4-openssl-dev \
+              libssl-dev \
+              libonig-dev \
+              libbz2-dev \
+              libpq-dev \
+              libgd-dev \
+              && rm -rf /var/lib/apt/lists/*
+
+          # 安装 PHP 扩展
+          RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+              && docker-php-ext-install -j$(nproc) \
+                  bcmath \
+                  gd \
+                  mysqli \
+                  zip \
+                  intl \
+                  xml \
+                  xsl \
+                  curl \
+                  mbstring \
+                  bz2 \
+                  soap \
+                  sockets \
+                  sodium \
+                  tokenizer \
+                  fileinfo \
+                  ctype \
+                  dom \
+                  filter \
+                  hash \
+                  iconv \
+                  json \
+                  openssl \
+                  pcre \
+                  pdo \
+                  pdo_mysql \
+                  phar \
+                  posix \
+                  session \
+                  simplexml \
+                  spl \
+                  sqlite3 \
+                  sysvsem \
+                  sysvshm \
+                  sysvmsg \
+                  tidy \
+                  xmlreader \
+                  xmlwriter \
+                  zlib
+
+          # 安装 Redis 扩展
+          RUN pecl install redis && docker-php-ext-enable redis
 
           # PHP 配置
-          RUN echo "open_basedir = /tmp:/var" > /etc/php/7.4/fpm/conf.d/open_basedir.ini
+          RUN echo "open_basedir = /tmp:/var" > /usr/local/etc/php/conf.d/open_basedir.ini
 
           # 添加我们的文件
           ADD ./crmeb /var/www
-          ADD ./docker-compose/php/php-ini-overrides.ini /etc/php/7.4/fpm/conf.d/99-overrides.ini
+          ADD ./docker-compose/php/php-ini-overrides.ini /usr/local/etc/php/conf.d/99-overrides.ini
           EOF
 
       #- name: Get tag
