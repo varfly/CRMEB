@@ -57,7 +57,7 @@ jobs:
         with:
           fetch-depth: 0
           repository: crmeb/CRMEB
-          ref: 'v5.4.0'
+          ref: '${{ needs.get-latest-tag.outputs.tag }}'
           path: CRMEB
 
       - name: CRMEB Docker meta
@@ -68,7 +68,8 @@ jobs:
           images: |
             ghcr.io/varfly/CRMEB
           tags: |
-            type=raw,value=v5.4.0
+            type=ref,event=tag
+            type=raw,value=${{ needs.get-latest-tag.outputs.tag }}
 
       - name: nginx Docker meta
         id: meta-nginx
@@ -78,7 +79,8 @@ jobs:
           images: |
             ghcr.io/varfly/CRMEB-nginx
           tags: |
-            type=raw,value=v5.4.0
+            type=ref,event=tag
+            type=raw,value=${{ needs.get-latest-tag.outputs.tag }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
