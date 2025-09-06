@@ -126,7 +126,7 @@ jobs:
               libgd-dev \
               && rm -rf /var/lib/apt/lists/*
 
-          # 安装 PHP 扩展
+          # 安装 PHP 扩展 - 只安装核心扩展
           RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
               && docker-php-ext-install -j$(nproc) \
                   bcmath \
@@ -135,38 +135,10 @@ jobs:
                   zip \
                   intl \
                   xml \
-                  xsl \
                   curl \
                   mbstring \
-                  bz2 \
-                  soap \
-                  sockets \
-                  sodium \
-                  tokenizer \
-                  fileinfo \
-                  ctype \
-                  dom \
-                  filter \
-                  hash \
-                  iconv \
-                  json \
-                  openssl \
-                  pcre \
                   pdo \
-                  pdo_mysql \
-                  phar \
-                  posix \
-                  session \
-                  simplexml \
-                  spl \
-                  sqlite3 \
-                  sysvsem \
-                  sysvshm \
-                  sysvmsg \
-                  tidy \
-                  xmlreader \
-                  xmlwriter \
-                  zlib
+                  pdo_mysql
 
           # 安装 Redis 扩展
           RUN pecl install redis && docker-php-ext-enable redis
