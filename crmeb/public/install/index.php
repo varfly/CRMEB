@@ -145,13 +145,17 @@ switch ($step) {
         exit();
 
     case '3':
-        $dbName = strtolower(trim($_POST['dbName']));
-        $_POST['dbport'] = $_POST['dbport'] ?: '3306';
+        
+        // 从环境变量获取数据库名称，如果没有环境变量则为空
+        $dbName = getenv('MYSQL_DB_NAME') ? trim(getenv('MYSQL_DB_NAME')) : '';
+        $dbPort = getenv('MYSQL_PORT') ?: '3306';
         if ($_GET['mysqldbpwd']) {
-            $dbHost = $_POST['dbHost'];
+            $dbHost = getenv('MYSQL_HOST') ?: '';
+            $dbUser = getenv('MYSQL_USER') ?: '';
+            $dbPwd = getenv('MYSQL_PASSWORD') ?: '';
             $conn = mysqli_init();
             mysqli_options($conn, MYSQLI_OPT_CONNECT_TIMEOUT, 2);
-            @mysqli_real_connect($conn, $dbHost, $_POST['dbUser'], $_POST['dbPwd'], NULL, $_POST['dbport']);
+            @mysqli_real_connect($conn, $dbHost, $dbUser, $dbPwd, NULL, $dbPort);
             if ($error = mysqli_connect_errno($conn)) {
                 if ($error == 2002) {
                     die(json_encode(2002));//地址或端口错误
@@ -196,10 +200,10 @@ switch ($step) {
         if ($_GET['redisdbpwd']) {
 
             //redis数据库信息
-            $rbhost = $_POST['rbhost'] ?? '127.0.0.1';
-            $rbport = $_POST['rbport'] ?? 6379;
-            $rbpw = $_POST['rbpw'] ?? '';
-            $rbselect = $_POST['rbselect'] ?? 0;
+            $rbhost = getenv('REDIS_HOST') ?: '127.0.0.1';
+            $rbport = getenv('REDIS_PORT') ?: 6379;
+            $rbpw = getenv('REDIS_PASSWORD') ?: '';
+            $rbselect = getenv('REDIS_SELECT') ?: 0;
 
             try {
                 if (!class_exists('redis')) {
@@ -236,12 +240,13 @@ switch ($step) {
                 exit;
             $arr = array();
 
-            $dbHost = trim($_POST['dbhost']);
-            $_POST['dbport'] = $_POST['dbport'] ?: '3306';
-            $dbName = strtolower(trim($_POST['dbname']));
-            $dbUser = trim($_POST['dbuser']);
-            $dbPwd = trim($_POST['dbpw']);
-            $dbPrefix = empty($_POST['dbprefix']) ? 'eb_' : trim($_POST['dbprefix']);
+            // 从环境变量获取数据库配置，如果没有环境变量则为空
+            $dbHost = getenv('MYSQL_HOST') ?: '';
+            $dbPort = getenv('MYSQL_PORT') ?: '3306';
+            $dbName = getenv('MYSQL_DB_NAME') ? trim(getenv('MYSQL_DB_NAME')) : '';
+            $dbUser = getenv('MYSQL_USER') ?: '';
+            $dbPwd = getenv('MYSQL_PASSWORD') ?: '';
+            $dbPrefix = 'eb_';
 
             $username = trim($_POST['manager']);
             $password = trim($_POST['manager_pwd']) ?: 'crmeb.com';
@@ -250,7 +255,7 @@ switch ($step) {
                 $arr['msg'] = "请安装 mysqli 扩展!";
                 exit(json_encode($arr));
             }
-            $conn = @mysqli_connect($dbHost, $dbUser, $dbPwd, NULL, $_POST['dbport']);
+            $conn = @mysqli_connect($dbHost, $dbUser, $dbPwd, NULL, $dbPort);
             if (mysqli_connect_errno($conn)) {
                 $arr['msg'] = "连接数据库失败!" . mysqli_connect_error($conn);
                 exit(json_encode($arr));
@@ -366,25 +371,25 @@ switch ($step) {
             $strConfig = str_replace('#DB_NAME#', $dbName, $strConfig);
             $strConfig = str_replace('#DB_USER#', $dbUser, $strConfig);
             $strConfig = str_replace('#DB_PWD#', $dbPwd, $strConfig);
-            $strConfig = str_replace('#DB_PORT#', $_POST['dbport'], $strConfig);
+            $strConfig = str_replace('#DB_PORT#', $dbPort, $strConfig);
             $strConfig = str_replace('#DB_PREFIX#', $dbPrefix, $strConfig);
             $strConfig = str_replace('#DB_CHARSET#', 'utf8', $strConfig);
 
             //缓存配置
-            $cachetype = $_POST['cache_type'] == 0 ? 'file' : 'redis';
+            $cachetype = 'redis';
             $strConfig = str_replace('#CACHE_TYPE#', $cachetype, $strConfig);
             $strConfig = str_replace('#CACHE_PREFIX#', 'cache_' . $unique . ':', $strConfig);
             $strConfig = str_replace('#CACHE_TAG_PREFIX#', 'cache_tag_' . $unique . ':', $strConfig);
 
             //redis数据库信息
-            $rbhost = $_POST['rbhost'] ?? '127.0.0.1';
-            $rbport = $_POST['rbport'] ?? '6379';
-            $rbpw = $_POST['rbpw'] ?? '';
-            $rbselect = $_POST['rbselect'] ?? 0;
+            $rbhost = getenv('REDIS_HOST') ?: '127.0.0.1';
+            $rbport = getenv('REDIS_PORT') ?: '6379';
+            $rbpw = getenv('REDIS_PASSWORD') ?: '';
+            $rbselect = getenv('REDIS_SELECT') ?: 0;
             $strConfig = str_replace('#RB_HOST#', $rbhost, $strConfig);
             $strConfig = str_replace('#RB_PORT#', $rbport, $strConfig);
             $strConfig = str_replace('#RB_PWD#', $rbpw, $strConfig);
-            $strConfig = str_replace('#RB_SELECT#', $rbselect, $strConfig);
+            $strConfig = str_replace('#RB_SELECT#', $rbselect, $strConfig); 
 
             //需改队列名称
             $strConfig = str_replace('#QUEUE_NAME#', $unique, $strConfig);
