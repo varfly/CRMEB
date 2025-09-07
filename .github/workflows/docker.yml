@@ -7,6 +7,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   build-docker-image:
     runs-on: ubuntu-latest
@@ -17,25 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: CRMEB Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ghcr.io/varfly/CRMEB
-          tags: |
-            type=raw,value=latest
-
-      - name: nginx Docker meta
-        id: meta-nginx
-        uses: docker/metadata-action@v5
-        with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ghcr.io/varfly/CRMEB-nginx
-          tags: |
-            type=raw,value=latest
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -114,21 +99,19 @@ jobs:
       #  with:
       #    strip_v: true # Optional: Remove 'v' character from version
 
-      - name: Build and push CRMEB Docker images to ghcr.io and DockerHub
+      - name: Build and push CRMEB Docker images
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./docker-compose/php/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/crmeb:latest
           no-cache: true
 
-      - name: Build and push nginx Docker images to ghcr.io and DockerHub
+      - name: Build and push nginx Docker images
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./nginx/Dockerfile
           push: true
-          tags: ${{ steps.meta-nginx.outputs.tags }}
-          labels: ${{ steps.meta-nginx.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/nginx:latest
