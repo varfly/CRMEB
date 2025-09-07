@@ -2,63 +2,20 @@ name: Build and push CRMEB Docker image
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "11 20 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  get-latest-tag:
-    name: Get latest tag
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout CRMEB
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          repository: crmeb/CRMEB
-      - name: Get CRMEB latest tag
-        id: tag
-        run: echo "tag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-            ref: ${{ github.head_ref }}
-            fetch-depth: 0
-      - name: Get my latest tag
-        id: mytag
-        run: echo "mytag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
-      - name: Add tag
-        id: addtag
-        if: steps.tag.outputs.tag != steps.mytag.outputs.mytag
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git tag ${{ steps.tag.outputs.tag }}
-          git push origin --tags
-          echo "addtag=true" >> "$GITHUB_OUTPUT"
-
-    outputs:
-      tag: ${{ steps.tag.outputs.tag }}
-      addtag: ${{ steps.addtag.outputs.addtag }}
-
   build-docker-image:
-    needs: get-latest-tag
-    if: needs.get-latest-tag.outputs.addtag == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Checkout CRMEB
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          repository: crmeb/CRMEB
-          ref: '${{ needs.get-latest-tag.outputs.tag }}'
-          path: CRMEB
 
       - name: CRMEB Docker meta
         id: meta
@@ -69,7 +26,7 @@ jobs:
             ghcr.io/varfly/CRMEB
           tags: |
             type=ref,event=tag
-            type=raw,value=${{ needs.get-latest-tag.outputs.tag }}
+            type=raw,value=latest
 
       - name: nginx Docker meta
         id: meta-nginx
@@ -80,7 +37,7 @@ jobs:
             ghcr.io/varfly/CRMEB-nginx
           tags: |
             type=ref,event=tag
-            type=raw,value=${{ needs.get-latest-tag.outputs.tag }}
+            type=raw,value=latest
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -98,16 +55,16 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: varfly
-          password: ${{ secrets.GH_PAT }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Fix Dockerfile for PHP 7.4 packages
         run: |
           # 备份原始 Dockerfile
-          cp ./CRMEB/docker-compose/php/Dockerfile ./CRMEB/docker-compose/php/Dockerfile.backup
+          cp ./crmeb/docker-compose/php/Dockerfile ./crmeb/docker-compose/php/Dockerfile.backup
           
           # 创建修复后的 Dockerfile
-          cat > ./CRMEB/docker-compose/php/Dockerfile << 'EOF'
+          cat > ./crmeb/docker-compose/php/Dockerfile << 'EOF'
           FROM php:7.4-fpm AS crmeb_php
           WORKDIR "/var/www"
 
@@ -162,8 +119,8 @@ jobs:
       - name: Build and push CRMEB Docker images to ghcr.io and DockerHub
         uses: docker/build-push-action@v6
         with:
-          context: ./CRMEB
-          file: ./CRMEB/docker-compose/php/Dockerfile
+          context: ./crmeb
+          file: ./crmeb/docker-compose/php/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
