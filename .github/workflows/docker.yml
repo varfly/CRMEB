@@ -61,10 +61,10 @@ jobs:
       - name: Fix Dockerfile for PHP 7.4 packages
         run: |
           # 备份原始 Dockerfile
-          cp ./crmeb/docker-compose/php/Dockerfile ./crmeb/docker-compose/php/Dockerfile.backup
+          cp ./docker-compose/php/Dockerfile ./docker-compose/php/Dockerfile.backup
           
           # 创建修复后的 Dockerfile
-          cat > ./crmeb/docker-compose/php/Dockerfile << 'EOF'
+          cat > ./docker-compose/php/Dockerfile << 'EOF'
           FROM php:7.4-fpm AS crmeb_php
           WORKDIR "/var/www"
 
@@ -119,8 +119,8 @@ jobs:
       - name: Build and push CRMEB Docker images to ghcr.io and DockerHub
         uses: docker/build-push-action@v6
         with:
-          context: ./crmeb
-          file: ./crmeb/docker-compose/php/Dockerfile
+          context: .
+          file: ./docker-compose/php/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
