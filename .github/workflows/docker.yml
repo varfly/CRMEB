@@ -9,7 +9,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/crmeb
+  IMAGE_NAME: ${{ github.repository_owner }}/CRMEB
 
 jobs:
   build-docker-image:
